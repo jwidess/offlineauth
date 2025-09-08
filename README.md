@@ -1,5 +1,6 @@
 # OfflineAuth
 
+### English | [简体中文](README_zh-CN.md)
 A lightweight authentication mod for offline (cracked) Minecraft servers.  
 Supports registration, login, inventory protection, brute-force prevention, and auto-login based on IP.
 
@@ -54,3 +55,4 @@ LGPLv3
 
 YuWan-030  
 2025
+
