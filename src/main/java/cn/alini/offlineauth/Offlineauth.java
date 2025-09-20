@@ -13,5 +13,6 @@ public class Offlineauth {
     public Offlineauth() {
         //mod成功加载日志
         LOGGER.info("OfflineAuth mod loaded successfully!");
+        new AuthConfig().save();
     }
 }

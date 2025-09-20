@@ -6,11 +6,9 @@ import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +22,7 @@ import net.minecraft.commands.Commands;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import cn.alini.trueuuid.api.TrueuuidApi;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -37,9 +36,9 @@ public class OfflineAuthHandler {
     private static final Map<String, ItemStack[]> inventoryBackup = new HashMap<>();
     private static final Map<String, Long> joinTimeMap = new HashMap<>();
     private static final Map<String, Integer> notLoggedTick = new HashMap<>();
+    private static final Map<String, double[]> notLoggedSpawnPos = new HashMap<>();
     private static final String INVENTORY_DIR = "config/offlineauth/inventory";
 
-    // ---- 自动登录和暴力破解防护 ----
     private static final String AUTOLOGIN_FILE = "config/offlineauth/autologin.json";
     private static final String FAIL_FILE = "config/offlineauth/fail.json";
     private static final Gson gson = new Gson();
@@ -48,8 +47,7 @@ public class OfflineAuthHandler {
     static { loadAutoLogin(); loadFail(); }
 
     private static boolean isOfflinePlayer(ServerPlayer player) {
-        UUID offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + player.getName().getString()).getBytes());
-        return player.getUUID().equals(offlineUuid);
+        return !TrueuuidApi.isPremium(player.getName().getString().toLowerCase(Locale.ROOT));
     }
 
     private static String getPlayerIp(ServerPlayer player) {
@@ -61,12 +59,10 @@ public class OfflineAuthHandler {
         return raw;
     }
 
-    // 自动登录结构
     public static class AutoLoginInfo {
         public String ip;
         public long lastLoginTime;
     }
-    // 暴力破解防护结构
     public static class FailInfo {
         public int failCount;
         public long lastFailTime;
@@ -112,6 +108,7 @@ public class OfflineAuthHandler {
             loggedIn.remove(name);
             joinTimeMap.put(name, System.currentTimeMillis());
             notLoggedTick.put(name, 0);
+            notLoggedSpawnPos.put(name, new double[]{player.getX(), player.getY(), player.getZ()}); // 记录上线坐标
 
             // --- 自动登录检查 ---
             String ip = getPlayerIp(player);
@@ -122,7 +119,9 @@ public class OfflineAuthHandler {
                 loggedIn.add(name);
                 joinTimeMap.remove(name);
                 notLoggedTick.remove(name);
+                notLoggedSpawnPos.remove(name);
                 restoreInventoryIfNeeded(player);
+                player.setInvulnerable(false); // 自动登录后恢复正常
                 player.sendSystemMessage(Component.literal(config.msg("auto_login_success")));
                 player.sendSystemMessage(Component.literal(config.msg("auto_login_warn")));
                 return;
@@ -139,6 +138,10 @@ public class OfflineAuthHandler {
             } else if (!inventoryBackup.containsKey(name) && hasInventoryFile(name)) {
                 player.getInventory().clearContent();
             }
+            // 未登录时无敌
+            player.setInvulnerable(true);
+        } else {
+            player.setInvulnerable(false);
         }
     }
 
@@ -147,12 +150,14 @@ public class OfflineAuthHandler {
         if (!(event.player instanceof ServerPlayer player)) return;
         String name = player.getName().getString();
         if (isOfflinePlayer(player) && !loggedIn.contains(name)) {
-            player.teleportTo(player.getX(), player.getY(), player.getZ());
+            double[] pos = notLoggedSpawnPos.getOrDefault(name, new double[]{player.getX(), player.getY(), player.getZ()});
+            player.teleportTo(pos[0], pos[1], pos[2]);
             Long joinTime = joinTimeMap.get(name);
             if (joinTime != null && System.currentTimeMillis() - joinTime > config.timeoutSeconds * 1000L) {
                 player.connection.disconnect(Component.literal(config.msg("timeout")));
                 joinTimeMap.remove(name);
                 notLoggedTick.remove(name);
+                notLoggedSpawnPos.remove(name);
                 return;
             }
             int tick = notLoggedTick.getOrDefault(name, 0) + 1;
@@ -175,6 +180,7 @@ public class OfflineAuthHandler {
         loggedIn.remove(name);
         joinTimeMap.remove(name);
         notLoggedTick.remove(name);
+        notLoggedSpawnPos.remove(name);
     }
 
     @SubscribeEvent
@@ -226,15 +232,6 @@ public class OfflineAuthHandler {
             if (isOfflinePlayer(player) && !loggedIn.contains(player.getName().getString())) {
                 event.setCanceled(true);
                 player.sendSystemMessage(Component.literal(config.msg("use_blocked")));
-            }
-        }
-    }
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onContainerOpen(PlayerContainerEvent.Open event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            if (isOfflinePlayer(player) && !loggedIn.contains(player.getName().getString())) {
-                event.setCanceled(true);
-                player.sendSystemMessage(Component.literal(config.msg("container_blocked")));
             }
         }
     }
@@ -296,7 +293,6 @@ public class OfflineAuthHandler {
         }
     }
 
-    // ---- 暴力破解防护：检测函数 ----
     private static boolean checkFailBlock(ServerPlayer player, String name) {
         if (!config.failBlockEnable) return false;
         FailInfo fi = failMap.get(name);
@@ -352,7 +348,7 @@ public class OfflineAuthHandler {
                                             }
                                             if (!pwd.equals(confirm)) {
                                                 recordFail(player, name);
-                                                return 1; // 失败自动踢出
+                                                return 1;
                                             }
                                             if (storage.isRegistered(name)) {
                                                 player.sendSystemMessage(Component.literal(config.msg("already_registered")));
@@ -362,10 +358,11 @@ public class OfflineAuthHandler {
                                             loggedIn.add(name);
                                             joinTimeMap.remove(name);
                                             notLoggedTick.remove(name);
+                                            notLoggedSpawnPos.remove(name);
                                             restoreInventoryIfNeeded(player);
+                                            player.setInvulnerable(false); // 登录后恢复
                                             player.sendSystemMessage(Component.literal(config.msg("register_success")));
                                             clearFail(name);
-                                            // 自动登录记录
                                             if (config.autoLoginEnable) {
                                                 String ip = getPlayerIp(player);
                                                 AutoLoginInfo info = new AutoLoginInfo();
@@ -395,7 +392,7 @@ public class OfflineAuthHandler {
                                             }
                                             if (!pwd.equals(confirm)) {
                                                 recordFail(player, name);
-                                                return 1; // 失败自动踢出
+                                                return 1;
                                             }
                                             if (storage.isRegistered(name)) {
                                                 player.sendSystemMessage(Component.literal(config.msg("already_registered")));
@@ -405,10 +402,11 @@ public class OfflineAuthHandler {
                                             loggedIn.add(name);
                                             joinTimeMap.remove(name);
                                             notLoggedTick.remove(name);
+                                            notLoggedSpawnPos.remove(name);
                                             restoreInventoryIfNeeded(player);
+                                            player.setInvulnerable(false);
                                             player.sendSystemMessage(Component.literal(config.msg("register_success")));
                                             clearFail(name);
-                                            // 自动登录记录
                                             if (config.autoLoginEnable) {
                                                 String ip = getPlayerIp(player);
                                                 AutoLoginInfo info = new AutoLoginInfo();
@@ -440,15 +438,16 @@ public class OfflineAuthHandler {
                                     }
                                     if (!storage.checkPassword(name, pwd)) {
                                         recordFail(player, name);
-                                        return 1; // 失败自动踢出
+                                        return 1;
                                     }
                                     loggedIn.add(name);
                                     joinTimeMap.remove(name);
                                     notLoggedTick.remove(name);
+                                    notLoggedSpawnPos.remove(name);
                                     restoreInventoryIfNeeded(player);
+                                    player.setInvulnerable(false); // 登录后恢复
                                     player.sendSystemMessage(Component.literal(config.msg("login_success")));
                                     clearFail(name);
-                                    // 自动登录记录
                                     if (config.autoLoginEnable) {
                                         String ip = getPlayerIp(player);
                                         AutoLoginInfo info = new AutoLoginInfo();
@@ -479,15 +478,16 @@ public class OfflineAuthHandler {
                                     }
                                     if (!storage.checkPassword(name, pwd)) {
                                         recordFail(player, name);
-                                        return 1; // 失败自动踢出
+                                        return 1;
                                     }
                                     loggedIn.add(name);
                                     joinTimeMap.remove(name);
                                     notLoggedTick.remove(name);
+                                    notLoggedSpawnPos.remove(name);
                                     restoreInventoryIfNeeded(player);
+                                    player.setInvulnerable(false); // 登录后恢复
                                     player.sendSystemMessage(Component.literal(config.msg("login_success")));
                                     clearFail(name);
-                                    // 自动登录记录
                                     if (config.autoLoginEnable) {
                                         String ip = getPlayerIp(player);
                                         AutoLoginInfo info = new AutoLoginInfo();
@@ -516,12 +516,11 @@ public class OfflineAuthHandler {
                                             }
                                             if (!storage.isRegistered(name) || !storage.checkPassword(name, oldPwd)) {
                                                 recordFail(player, name);
-                                                return 1; // 失败自动踢出
+                                                return 1;
                                             }
                                             storage.changePassword(name, newPwd);
                                             player.sendSystemMessage(Component.literal(config.msg("changepwd_success")));
                                             clearFail(name);
-                                            // 自动登录记录（可选）
                                             if (config.autoLoginEnable) {
                                                 String ip = getPlayerIp(player);
                                                 AutoLoginInfo info = new AutoLoginInfo();
@@ -538,14 +537,14 @@ public class OfflineAuthHandler {
         event.getDispatcher().register(
                 Commands.literal("auth")
                         .then(Commands.literal("help")
-                            .executes(ctx -> {
-                                ServerPlayer player = ctx.getSource().getPlayerOrException();
-                                player.sendSystemMessage(Component.literal(config.msg("help_header")));
-                                player.sendSystemMessage(Component.literal(config.msg("help_register")));
-                                player.sendSystemMessage(Component.literal(config.msg("help_login")));
-                                player.sendSystemMessage(Component.literal(config.msg("help_changepwd")));
-                                return 1;
-                            })
+                                .executes(ctx -> {
+                                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                                    player.sendSystemMessage(Component.literal(config.msg("help_header")));
+                                    player.sendSystemMessage(Component.literal(config.msg("help_register")));
+                                    player.sendSystemMessage(Component.literal(config.msg("help_login")));
+                                    player.sendSystemMessage(Component.literal(config.msg("help_changepwd")));
+                                    return 1;
+                                })
                         )
         );
     }
