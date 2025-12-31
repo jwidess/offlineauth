@@ -111,9 +111,9 @@ public class OfflineAuthHandler {
             loggedIn.remove(name);
             joinTimeMap.put(name, System.currentTimeMillis());
             notLoggedTick.put(name, 0);
-            notLoggedSpawnPos.put(name, new double[]{player.getX(), player.getY(), player.getZ()}); // 记录上线坐标
+            notLoggedSpawnPos.put(name, new double[]{player.getX(), player.getY(), player.getZ()}); // 记录上线坐标 (Record login coordinates)
 
-            // --- 自动登录检查 ---
+            // --- 自动登录检查 (Auto-login check) ---
             String ip = getPlayerIp(player);
             AutoLoginInfo info = autoLoginMap.get(name);
             if (config.autoLoginEnable && info != null && info.ip != null && info.ip.equals(ip)
@@ -124,20 +124,20 @@ public class OfflineAuthHandler {
                 notLoggedTick.remove(name);
                 notLoggedSpawnPos.remove(name);
                 restoreInventoryIfNeeded(player);
-                player.setInvulnerable(false); // 自动登录后恢复正常
+                player.setInvulnerable(false); // 自动登录后恢复正常 (Restore to normal after auto-login)
                 player.sendSystemMessage(Component.literal(config.msg("auto_login_success")));
                 player.sendSystemMessage(Component.literal(config.msg("auto_login_warn")));
                 return;
             }
 
-            // 背包暂存，防止未登录时操作物品
+            // 背包暂存，防止未登录时操作物品 (Inventory backup to prevent item manipulation when not logged in)
             if (!inventoryBackup.containsKey(name) && !hasInventoryFile(name)) {
                 backupInventory(name, player);
                 player.getInventory().clearContent();
             } else if (!inventoryBackup.containsKey(name) && hasInventoryFile(name)) {
                 player.getInventory().clearContent();
             }
-            // 未登录时无敌
+            // 未登录时无敌 (Invulnerable when not logged in)
             player.setInvulnerable(true);
         } else {
             player.setInvulnerable(false);
@@ -399,8 +399,9 @@ public class OfflineAuthHandler {
                                             joinTimeMap.remove(name);
                                             notLoggedTick.remove(name);
                                             notLoggedSpawnPos.remove(name);
+                                            // Restore after login
                                             restoreInventoryIfNeeded(player);
-                                            player.setInvulnerable(false); // 登录后恢复
+                                            player.setInvulnerable(false); // 登录后恢复 (Restore after login)
                                             player.sendSystemMessage(Component.literal(config.msg("register_success")));
                                             clearFail(name);
                                             if (config.autoLoginEnable) {
@@ -485,7 +486,7 @@ public class OfflineAuthHandler {
                                     notLoggedTick.remove(name);
                                     notLoggedSpawnPos.remove(name);
                                     restoreInventoryIfNeeded(player);
-                                    player.setInvulnerable(false); // 登录后恢复
+                                    player.setInvulnerable(false); // 登录后恢复 (Restore after login)
                                     player.sendSystemMessage(Component.literal(config.msg("login_success")));
                                     clearFail(name);
                                     if (config.autoLoginEnable) {
@@ -525,7 +526,7 @@ public class OfflineAuthHandler {
                                     notLoggedTick.remove(name);
                                     notLoggedSpawnPos.remove(name);
                                     restoreInventoryIfNeeded(player);
-                                    player.setInvulnerable(false); // 登录后恢复
+                                    player.setInvulnerable(false); // 登录后恢复 (Restore after login)
                                     player.sendSystemMessage(Component.literal(config.msg("login_success")));
                                     clearFail(name);
                                     if (config.autoLoginEnable) {
