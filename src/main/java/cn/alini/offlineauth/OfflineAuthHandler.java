@@ -282,7 +282,7 @@ public class OfflineAuthHandler {
             player.load(backup);
             
             if (!removeBackup(name)) {
-                player.connection.disconnect(Component.literal("Critical Error: Failed to clear inventory backup. Login aborted to prevent data loss."));
+                player.connection.disconnect(Component.literal("offlineauth Server Error: Failed to clear inventory backup. Login aborted to prevent data loss. Contact server owner for assistance."));
                 return;
             }
             player.inventoryMenu.broadcastChanges();
