@@ -240,24 +240,38 @@ public class OfflineAuthHandler {
 
     private static void backupInventory(String name, ServerPlayer player) {
         CompoundTag tag = new CompoundTag();
-        player.saveWithoutId(tag);
+        String ext;
+        if (config.inventoryOnly) {
+            tag.put("Inventory", player.getInventory().save(new ListTag()));
+            ext = ".inv";
+        } else {
+            player.saveWithoutId(tag);
+            ext = ".dat";
+        }
         inventoryBackup.put(name, tag);
         File dir = new File(INVENTORY_DIR);
         if (!dir.exists()) dir.mkdirs();
-        File file = new File(dir, name + ".dat");
+        File file = new File(dir, name + ext);
         try (FileOutputStream fos = new FileOutputStream(file)) {
             NbtIo.writeCompressed(tag, fos);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    private static File getBackupFile(String name) {
+        File dat = new File(INVENTORY_DIR, name + ".dat");
+        if (dat.exists()) return dat;
+        File inv = new File(INVENTORY_DIR, name + ".inv");
+        if (inv.exists()) return inv;
+        return null;
+    }
     private static boolean hasInventoryFile(String name) {
-        return new File(INVENTORY_DIR, name + ".dat").exists();
+        return getBackupFile(name) != null;
     }
     private static CompoundTag loadBackupInventory(String name) {
         if (inventoryBackup.containsKey(name)) return inventoryBackup.get(name);
-        File file = new File(INVENTORY_DIR, name + ".dat");
-        if (!file.exists()) return null;
+        File file = getBackupFile(name);
+        if (file == null) return null;
         try (FileInputStream fis = new FileInputStream(file)) {
             CompoundTag root = NbtIo.readCompressed(fis);
             inventoryBackup.put(name, root);
@@ -269,8 +283,8 @@ public class OfflineAuthHandler {
     }
     private static boolean removeBackup(String name) {
         inventoryBackup.remove(name);
-        File file = new File(INVENTORY_DIR, name + ".dat");
-        if (!file.exists()) return true;
+        File file = getBackupFile(name);
+        if (file == null) return true;
         for (int i = 0; i < 5; i++) {
             if (file.delete()) return true;
             try { Thread.sleep(20); } catch (InterruptedException e) {}
@@ -279,8 +293,9 @@ public class OfflineAuthHandler {
     }
     private static void restoreInventoryIfNeeded(ServerPlayer player) {
         String name = player.getName().getString();
+        File file = getBackupFile(name);
         CompoundTag backup = loadBackupInventory(name);
-        if (backup != null) {
+        if (backup != null && file != null) {
             // Capture items received while unauthenticated (e.g. starter kits or mod items)
             List<ItemStack> newItems = new ArrayList<>();
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
@@ -290,8 +305,15 @@ public class OfflineAuthHandler {
                 }
             }
 
-            // Full NBT restore (supports mod data like Curios, etc)
-            player.load(backup);
+            boolean isFullNbt = file.getName().endsWith(".dat");
+            if (isFullNbt && !config.inventoryOnly) {
+                player.load(backup); // Full NBT restore (supports mod data like Curios, etc)
+            } else {
+                // Inventory only restore (either from .inv file OR from .dat file if config changed)
+                if (backup.contains("Inventory", 9)) {
+                    player.getInventory().load(backup.getList("Inventory", 10));
+                }
+            }
 
             // Merge new items back in, dropping if inventory is full
             for (ItemStack stack : newItems) {

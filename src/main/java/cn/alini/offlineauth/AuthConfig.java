@@ -20,6 +20,7 @@ public class AuthConfig {
     public int failLockSeconds = 60;
     public boolean autoLoginEnable = true;
     public boolean failBlockEnable = true;
+    public boolean inventoryOnly = false; // true = Only backup inventory | false = Backup full player NBT
     public String prefix = "§7[§bAuth§7] ";
     public Map<String, String> messages = new HashMap<>();
 
@@ -78,6 +79,7 @@ public class AuthConfig {
                 this.maxFailAttempts = loaded.maxFailAttempts;
                 this.failLockSeconds = loaded.failLockSeconds;
                 this.autoLoginEnable = loaded.autoLoginEnable;
+                this.inventoryOnly = loaded.inventoryOnly;
                 this.failBlockEnable = loaded.failBlockEnable;
                 this.prefix = loaded.prefix;
                 if (loaded.messages != null) this.messages.putAll(loaded.messages);
