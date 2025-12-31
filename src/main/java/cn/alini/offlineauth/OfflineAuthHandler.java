@@ -240,7 +240,7 @@ public class OfflineAuthHandler {
         inventoryBackup.put(name, inv);
         File dir = new File(INVENTORY_DIR);
         if (!dir.exists()) dir.mkdirs();
-        File file = new File(dir, name + ".json");
+        File file = new File(dir, name + ".dat");
         try (FileOutputStream fos = new FileOutputStream(file)) {
             ListTag list = new ListTag();
             for (ItemStack stack : inv) {
@@ -254,12 +254,12 @@ public class OfflineAuthHandler {
         }
     }
     private static boolean hasInventoryFile(String name) {
-        File file = new File(INVENTORY_DIR, name + ".json");
+        File file = new File(INVENTORY_DIR, name + ".dat");
         return file.exists();
     }
     private static ItemStack[] loadBackupInventory(String name, int size) {
         if (inventoryBackup.containsKey(name)) return inventoryBackup.get(name);
-        File file = new File(INVENTORY_DIR, name + ".json");
+        File file = new File(INVENTORY_DIR, name + ".dat");
         if (!file.exists()) return null;
         try (FileInputStream fis = new FileInputStream(file)) {
             CompoundTag root = NbtIo.readCompressed(fis);
@@ -278,7 +278,7 @@ public class OfflineAuthHandler {
     }
     private static boolean removeBackup(String name) {
         inventoryBackup.remove(name);
-        File file = new File(INVENTORY_DIR, name + ".json");
+        File file = new File(INVENTORY_DIR, name + ".dat");
         if (!file.exists()) return true;
         for (int i = 0; i < 5; i++) {
             if (file.delete()) return true;
