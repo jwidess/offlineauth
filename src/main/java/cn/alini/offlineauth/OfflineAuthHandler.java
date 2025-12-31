@@ -276,10 +276,15 @@ public class OfflineAuthHandler {
             return null;
         }
     }
-    private static void removeBackup(String name) {
+    private static boolean removeBackup(String name) {
         inventoryBackup.remove(name);
         File file = new File(INVENTORY_DIR, name + ".json");
-        if (file.exists()) file.delete();
+        if (!file.exists()) return true;
+        for (int i = 0; i < 5; i++) {
+            if (file.delete()) return true;
+            try { Thread.sleep(20); } catch (InterruptedException e) {}
+        }
+        return !file.exists();
     }
     private static void restoreInventoryIfNeeded(ServerPlayer player) {
         String name = player.getName().getString();
@@ -288,7 +293,10 @@ public class OfflineAuthHandler {
             for (int i = 0; i < backup.length; i++) {
                 player.getInventory().setItem(i, backup[i]);
             }
-            removeBackup(name);
+            if (!removeBackup(name)) {
+                player.connection.disconnect(Component.literal("Critical Error: Failed to clear inventory backup. Login aborted to prevent data loss."));
+                return;
+            }
             player.sendSystemMessage(Component.literal(config.msg("inventory_restored")));
         }
     }
