@@ -44,7 +44,7 @@ public class OfflineAuthHandler {
     private static final Gson gson = new Gson();
     private static final Map<String, AutoLoginInfo> autoLoginMap = new HashMap<>();
     private static final Map<String, FailInfo> failMap = new HashMap<>();
-    static { loadAutoLogin(); loadFail(); }
+    static { config.load(); loadAutoLogin(); loadFail(); }
 
     private static boolean isOfflinePlayer(ServerPlayer player) {
         return !TrueuuidApi.isPremium(player.getName().getString().toLowerCase(Locale.ROOT));
