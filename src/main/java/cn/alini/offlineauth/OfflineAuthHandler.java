@@ -564,6 +564,14 @@ public class OfflineAuthHandler {
                                     return 1;
                                 })
                         )
+                        .then(Commands.literal("reload")
+                                .requires(source -> source.hasPermission(2))
+                                .executes(ctx -> {
+                                    config.load();
+                                    ctx.getSource().sendSuccess(() -> Component.literal(config.msg("reload_success")), true);
+                                    return 1;
+                                })
+                        )
         );
     }
 }

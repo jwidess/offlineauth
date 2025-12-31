@@ -22,6 +22,7 @@ Supports registration, login, inventory protection, brute-force prevention, and 
 - `/login <password>` — Login to your account.
 - `/changepassword <old> <new>` — Change your password.
 - `/auth help` — Show help information.
+- `/auth reload` — Reload the configuration file (requires permission level 2).
 
 ## Configuration
 

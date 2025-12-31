@@ -22,6 +22,7 @@
 - `/login <密码>` — 登录账户
 - `/changepassword <旧密码> <新密码>` — 修改密码
 - `/auth help` — 查看帮助信息
+- `/auth reload` — 重载配置文件（需要权限等级 2）
 
 ## 配置说明
 
