@@ -23,6 +23,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import cn.alini.trueuuid.api.TrueuuidApi;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -30,6 +32,7 @@ import java.util.*;
 
 @Mod.EventBusSubscriber
 public class OfflineAuthHandler {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final JsonAuthStorage storage = new JsonAuthStorage();
     private static final AuthConfig config = new AuthConfig();
     private static final Set<String> loggedIn = new HashSet<>();
@@ -282,6 +285,7 @@ public class OfflineAuthHandler {
             player.load(backup);
             
             if (!removeBackup(name)) {
+                LOGGER.error("CRITICAL: Failed to delete inventory backup for player {}! Kicking player to prevent data loss.", name);
                 player.connection.disconnect(Component.literal("offlineauth Server Error: Failed to clear inventory backup. Login aborted to prevent data loss. Contact server owner for assistance."));
                 return;
             }
