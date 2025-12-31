@@ -25,6 +25,7 @@ public class AuthConfig {
 
     public AuthConfig() {
         // 默认消息初始化（不要在这里调用load！）
+        // Default message initialization (Do not call load! here)
         messages.put("register_prompt", "§c首次进服，请使用 /register 密码 确认密码 注册账户！");
         messages.put("login_prompt", "§e请使用 /login 密码 登录账户！");
         messages.put("already_registered", "§c您已注册，请用 /login 密码 登录！");
@@ -58,10 +59,13 @@ public class AuthConfig {
         messages.put("reload_success", "§a配置已重载！");
 
         // 正确做法：在构造后，手动调用 load()，不要在构造里调用
+        // Correct approach: Manually call load() after construction; do not call it within the constructor.
         // 由主类 new AuthConfig 后，再调用 config.load()
+        // After the main class news AuthConfig, call config.load()
     }
 
     // 由主类调用 config.load()，不要循环new！
+    // Called by the main class config.load(), do not loop new!
     public void load() {
         File dir = new File(DIR);
         if (!dir.exists()) dir.mkdirs();

@@ -23,7 +23,7 @@ public class JsonAuthStorage {
         load();
     }
 
-    // 每次操作前热加载
+    // 每次操作前热加载 (Hot reload before each operation)
     private void reloadIfChanged() {
         File file = FILE_PATH.toFile();
         if (!file.exists()) {
@@ -43,7 +43,7 @@ public class JsonAuthStorage {
         if (!dir.exists()) dir.mkdirs();
         File file = FILE_PATH.toFile();
         if (!file.exists()) {
-            save(); // 写一个空文件
+            save(); // 写一个空文件 (Write an empty file)
             lastModified = file.exists() ? file.lastModified() : -1;
             return;
         }

@@ -11,7 +11,7 @@ public class Offlineauth {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Offlineauth() {
-        //mod成功加载日志
+        //mod成功加载日志 (Mod successful loading log)
         LOGGER.info("OfflineAuth mod loaded successfully!");
     }
 }
