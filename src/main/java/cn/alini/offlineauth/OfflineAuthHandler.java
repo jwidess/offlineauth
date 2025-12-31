@@ -33,7 +33,7 @@ public class OfflineAuthHandler {
     private static final JsonAuthStorage storage = new JsonAuthStorage();
     private static final AuthConfig config = new AuthConfig();
     private static final Set<String> loggedIn = new HashSet<>();
-    private static final Map<String, ItemStack[]> inventoryBackup = new HashMap<>();
+    private static final Map<String, CompoundTag> inventoryBackup = new HashMap<>();
     private static final Map<String, Long> joinTimeMap = new HashMap<>();
     private static final Map<String, Integer> notLoggedTick = new HashMap<>();
     private static final Map<String, double[]> notLoggedSpawnPos = new HashMap<>();
@@ -129,11 +129,7 @@ public class OfflineAuthHandler {
 
             // 背包暂存，防止未登录时操作物品
             if (!inventoryBackup.containsKey(name) && !hasInventoryFile(name)) {
-                ItemStack[] inv = new ItemStack[player.getInventory().getContainerSize()];
-                for (int i = 0; i < inv.length; i++) {
-                    inv[i] = player.getInventory().getItem(i).copy();
-                }
-                backupInventory(name, inv);
+                backupInventory(name, player);
                 player.getInventory().clearContent();
             } else if (!inventoryBackup.containsKey(name) && hasInventoryFile(name)) {
                 player.getInventory().clearContent();
@@ -161,6 +157,9 @@ public class OfflineAuthHandler {
                 return;
             }
             int tick = notLoggedTick.getOrDefault(name, 0) + 1;
+            if (player.containerMenu != player.inventoryMenu) {
+                player.closeContainer();
+            }
             if (tick >= 100) { // 5秒=100tick
                 if (!storage.isRegistered(name)) {
                     player.sendSystemMessage(Component.literal(config.msg("register_prompt")));
@@ -236,41 +235,30 @@ public class OfflineAuthHandler {
         }
     }
 
-    private static void backupInventory(String name, ItemStack[] inv) {
-        inventoryBackup.put(name, inv);
+    private static void backupInventory(String name, ServerPlayer player) {
+        CompoundTag tag = new CompoundTag();
+        player.saveWithoutId(tag);
+        inventoryBackup.put(name, tag);
         File dir = new File(INVENTORY_DIR);
         if (!dir.exists()) dir.mkdirs();
         File file = new File(dir, name + ".dat");
         try (FileOutputStream fos = new FileOutputStream(file)) {
-            ListTag list = new ListTag();
-            for (ItemStack stack : inv) {
-                list.add(stack.save(new CompoundTag()));
-            }
-            CompoundTag root = new CompoundTag();
-            root.put("items", list);
-            NbtIo.writeCompressed(root, fos);
+            NbtIo.writeCompressed(tag, fos);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     private static boolean hasInventoryFile(String name) {
-        File file = new File(INVENTORY_DIR, name + ".dat");
-        return file.exists();
+        return new File(INVENTORY_DIR, name + ".dat").exists();
     }
-    private static ItemStack[] loadBackupInventory(String name, int size) {
+    private static CompoundTag loadBackupInventory(String name) {
         if (inventoryBackup.containsKey(name)) return inventoryBackup.get(name);
         File file = new File(INVENTORY_DIR, name + ".dat");
         if (!file.exists()) return null;
         try (FileInputStream fis = new FileInputStream(file)) {
             CompoundTag root = NbtIo.readCompressed(fis);
-            ListTag list = root.getList("items", 10);
-            ItemStack[] inv = new ItemStack[size];
-            for (int i = 0; i < inv.length && i < list.size(); i++) {
-                inv[i] = ItemStack.of(list.getCompound(i));
-            }
-            for (int i = list.size(); i < inv.length; i++) inv[i] = ItemStack.EMPTY;
-            inventoryBackup.put(name, inv);
-            return inv;
+            inventoryBackup.put(name, root);
+            return root;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -288,15 +276,17 @@ public class OfflineAuthHandler {
     }
     private static void restoreInventoryIfNeeded(ServerPlayer player) {
         String name = player.getName().getString();
-        ItemStack[] backup = loadBackupInventory(name, player.getInventory().getContainerSize());
+        CompoundTag backup = loadBackupInventory(name);
         if (backup != null) {
-            for (int i = 0; i < backup.length; i++) {
-                player.getInventory().setItem(i, backup[i]);
-            }
+            // Full NBT restore (supports mod data like Curios, etc)
+            player.load(backup);
+            
             if (!removeBackup(name)) {
                 player.connection.disconnect(Component.literal("Critical Error: Failed to clear inventory backup. Login aborted to prevent data loss."));
                 return;
             }
+            player.inventoryMenu.broadcastChanges();
+            player.containerMenu.broadcastChanges();
             player.sendSystemMessage(Component.literal(config.msg("inventory_restored")));
         }
     }
