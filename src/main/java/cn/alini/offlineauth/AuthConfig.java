@@ -55,6 +55,7 @@ public class AuthConfig {
         messages.put("help_login", "§e/login 密码 §7- 登录账户");
         messages.put("help_changepwd", "§e/changepassword 旧密码 新密码 §7- 修改密码");
         messages.put("auto_login_warn", "§e⚠已启用自动登录（同IP设备短时间内无需重复登录）。如在网吧/公共电脑请勿使用此功能，避免账号被盗。");
+        messages.put("reload_success", "§a配置已重载！");
 
         // 正确做法：在构造后，手动调用 load()，不要在构造里调用
         // 由主类 new AuthConfig 后，再调用 config.load()
