@@ -2,6 +2,8 @@ package cn.alini.offlineauth;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -23,6 +25,7 @@ public class JsonAuthStorage {
     private static final String OLD_FILE_NAME = "auth.json";
     private static final Path FILE_PATH = Path.of(DIR, FILE_NAME);
     private static final Gson gson = new Gson();
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     // PBKDF2 constants for password hashing
     private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
@@ -73,7 +76,7 @@ public class JsonAuthStorage {
                 }
                 migrationSuccess = true;
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Failed to migrate old auth.json", e);
             }
 
             if (migrationSuccess) {
@@ -94,7 +97,7 @@ public class JsonAuthStorage {
             Map<String, String> map = gson.fromJson(reader, type);
             if (map != null) credentials.putAll(map);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load auth_hash.json", e);
         }
         lastModified = file.lastModified();
     }
@@ -105,7 +108,7 @@ public class JsonAuthStorage {
         try (Writer writer = new FileWriter(FILE_PATH.toFile())) {
             gson.toJson(credentials, writer);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to save auth_hash.json", e);
         }
         File file = FILE_PATH.toFile();
         lastModified = file.exists() ? file.lastModified() : -1;
@@ -149,8 +152,7 @@ public class JsonAuthStorage {
             // Format: salt:hash (both Base64)
             return Base64.getEncoder().encodeToString(salt) + SALT_SEPARATOR + Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Failed to hash password", e);
         }
     }
 
@@ -170,7 +172,7 @@ public class JsonAuthStorage {
             // Compare new hash with stored hash
             return Arrays.equals(hash, inputHash);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to verify password", e);
             return false;
         }
     }

@@ -76,13 +76,13 @@ public class OfflineAuthHandler {
             Type t = new TypeToken<Map<String, AutoLoginInfo>>(){}.getType();
             Map<String, AutoLoginInfo> m = gson.fromJson(r, t);
             if (m != null) autoLoginMap.putAll(m);
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { LOGGER.error("Failed to load autologin.json", e); }
     }
     private static void saveAutoLogin() {
         File f = new File(AUTOLOGIN_FILE);
         try (Writer w = new FileWriter(f)) {
             gson.toJson(autoLoginMap, w);
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { LOGGER.error("Failed to save autologin.json", e); }
     }
     private static void loadFail() {
         File f = new File(FAIL_FILE);
@@ -91,13 +91,13 @@ public class OfflineAuthHandler {
             Type t = new TypeToken<Map<String, FailInfo>>(){}.getType();
             Map<String, FailInfo> m = gson.fromJson(r, t);
             if (m != null) failMap.putAll(m);
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { LOGGER.error("Failed to load fail.json", e); }
     }
     private static void saveFail() {
         File f = new File(FAIL_FILE);
         try (Writer w = new FileWriter(f)) {
             gson.toJson(failMap, w);
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { LOGGER.error("Failed to save fail.json", e); }
     }
 
     @SubscribeEvent
