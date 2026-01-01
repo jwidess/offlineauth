@@ -41,8 +41,8 @@ public class JsonAuthStorage {
     private void reloadIfChanged() {
         File file = FILE_PATH.toFile();
         if (!file.exists()) {
-            credentials = new HashMap<>();
-            lastModified = -1;
+            // File missing, might need migration or it's just empty. Let load() handle it.
+            load();
             return;
         }
         long lm = file.lastModified();
@@ -61,6 +61,7 @@ public class JsonAuthStorage {
 
         // Old to New Migration logic: If new file doesn't exist but old one does
         if (!file.exists() && oldFile.exists()) {
+            boolean migrationSuccess = false;
             try (Reader reader = new FileReader(oldFile)) {
                 Type type = new TypeToken<Map<String, String>>(){}.getType();
                 Map<String, String> map = gson.fromJson(reader, type);
@@ -70,11 +71,14 @@ public class JsonAuthStorage {
                         credentials.put(entry.getKey(), hashPassword(entry.getValue()));
                     }
                 }
-                save(); // Save to new auth_hash.json
-                // Rename old file to prevent confusion
-                oldFile.renameTo(new File(dir, OLD_FILE_NAME + ".migrated"));
+                migrationSuccess = true;
             } catch (Exception e) {
                 e.printStackTrace();
+            }
+
+            if (migrationSuccess) {
+                save(); // Save to new auth_hash.json
+                oldFile.renameTo(new File(dir, OLD_FILE_NAME + ".migrated")); // Rename old file
             }
             lastModified = file.exists() ? file.lastModified() : -1;
             return;
