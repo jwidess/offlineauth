@@ -27,37 +27,37 @@ public class AuthConfig {
     public AuthConfig() {
         // 默认消息初始化（不要在这里调用load！）
         // Default message initialization (Do not call load! here)
-        messages.put("register_prompt", "§c首次进服，请使用 /register 密码 确认密码 注册账户！");
-        messages.put("login_prompt", "§e请使用 /login 密码 登录账户！");
-        messages.put("already_registered", "§c您已注册，请用 /login 密码 登录！");
-        messages.put("not_registered", "§c您尚未注册，请用 /register 密码 确认密码 注册！");
-        messages.put("register_success", "§a注册成功，已自动登入！");
-        messages.put("login_success", "§a登录成功！");
-        messages.put("auto_login_success", "§a检测到同IP设备，已自动登录。");
-        messages.put("password_mismatch", "§c两次输入的密码不一致！");
-        messages.put("wrong_password", "§c密码错误！");
-        messages.put("timeout", "§c未登录超时已被踢出！");
-        messages.put("no_permission_register", "§c正版玩家无需注册！");
-        messages.put("no_permission_login", "§c正版玩家无需登录！");
-        messages.put("no_permission_changepwd", "§c正版玩家无需修改密码！");
-        messages.put("changepwd_success", "§a密码修改成功！");
-        messages.put("changepwd_wrong", "§c原密码错误！");
-        messages.put("inventory_restored", "§a背包已恢复");
-        messages.put("chat_blocked", "§c未登录禁止发言");
-        messages.put("break_blocked", "§c未登录禁止破坏方块");
-        messages.put("place_blocked", "§c未登录禁止放置方块");
-        messages.put("drop_blocked", "§c未登录禁止丢弃物品");
-        messages.put("pickup_blocked", "§c未登录禁止拾取物品");
-        messages.put("use_blocked", "§c未登录禁止使用物品");
-        messages.put("container_blocked", "§c未登录禁止打开背包/容器");
-        messages.put("fail_blocked", "§c错误次数过多，请{lock}秒后再试！");
-        messages.put("fail_attempts_left", "§c密码错误！剩余尝试次数：{left}");
-        messages.put("help_header", "§6离线认证插件指令列表：");
-        messages.put("help_register", "§e/register 密码 确认密码 §7- 注册账户（首次进服使用）");
-        messages.put("help_login", "§e/login 密码 §7- 登录账户");
-        messages.put("help_changepwd", "§e/changepassword 旧密码 新密码 §7- 修改密码");
-        messages.put("auto_login_warn", "§e⚠已启用自动登录（同IP设备短时间内无需重复登录）。如在网吧/公共电脑请勿使用此功能，避免账号被盗。");
-        messages.put("reload_success", "§a配置已重载！");
+        messages.put("register_prompt", "§cFirst time joining! Please use /register <password> <confirm> to register your account!");
+        messages.put("login_prompt", "§ePlease use /login <password> to login!");
+        messages.put("already_registered", "§cYou are already registered! Please use /login <password> to login!");
+        messages.put("not_registered", "§cYou are not registered! Please use /register <password> <confirm> to register!");
+        messages.put("register_success", "§aRegistration successful! You are now logged in.");
+        messages.put("login_success", "§aLogin successful!");
+        messages.put("auto_login_success", "§aDetected same IP address, auto-login successful.");
+        messages.put("password_mismatch", "§cPasswords do not match!");
+        messages.put("wrong_password", "§cIncorrect password!");
+        messages.put("timeout", "§cYou have been kicked for not logging in within the time limit!");
+        messages.put("no_permission_register", "§cPremium players do not need to register!");
+        messages.put("no_permission_login", "§cPremium players do not need to login!");
+        messages.put("no_permission_changepwd", "§cPremium players do not need to change password!");
+        messages.put("changepwd_success", "§aPassword changed successfully!");
+        messages.put("changepwd_wrong", "§cOld password is incorrect!");
+        messages.put("inventory_restored", "§aInventory restored");
+        messages.put("chat_blocked", "§cYou must login to chat");
+        messages.put("break_blocked", "§cYou must login to break blocks");
+        messages.put("place_blocked", "§cYou must login to place blocks");
+        messages.put("drop_blocked", "§cYou must login to drop items");
+        messages.put("pickup_blocked", "§cYou must login to pickup items");
+        messages.put("use_blocked", "§cYou must login to use items");
+        messages.put("container_blocked", "§cYou must login to open inventory/containers");
+        messages.put("fail_blocked", "§cToo many failed attempts! Please try again in {lock} seconds.");
+        messages.put("fail_attempts_left", "§cIncorrect password! Attempts remaining: {left}");
+        messages.put("help_header", "§6Offline Auth Command List:");
+        messages.put("help_register", "§e/register <password> <confirm> §7- Register account (first time joining)");
+        messages.put("help_login", "§e/login <password> §7- Login to account");
+        messages.put("help_changepwd", "§e/changepassword <old> <new> §7- Change password");
+        messages.put("auto_login_warn", "§e⚠Auto-login is enabled (same IP address will not need to login again for a short time). Do not use this feature on public computers to avoid account theft.");
+        messages.put("reload_success", "§aConfiguration reloaded!");
 
         // 正确做法：在构造后，手动调用 load()，不要在构造里调用
         // Correct approach: Manually call load() after construction; do not call it within the constructor.
@@ -104,11 +104,11 @@ public class AuthConfig {
     }
 
     public String msg(String key) {
-        return prefix + messages.getOrDefault(key, "配置缺失：" + key);
+        return prefix + messages.getOrDefault(key, "Missing config: " + key);
     }
 
     public String msg(String key, Map<String, String> params) {
-        String raw = prefix + messages.getOrDefault(key, "配置缺失：" + key);
+        String raw = prefix + messages.getOrDefault(key, "Missing config: " + key);
         if (params != null) {
             for (Map.Entry<String, String> e : params.entrySet()) {
                 raw = raw.replace("{" + e.getKey() + "}", e.getValue());
