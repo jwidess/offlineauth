@@ -37,7 +37,7 @@ Edit `config/offlineauth/config.json` to customize:
 ## Security Notice
 
 - **Auto-login (same IP)** is convenient, but insecure on public computers/networks. Always warn players to protect their accounts.
-- Passwords are stored in plain text (by default), use at your own risk or extend for encryption.
+- Passwords are securely hashed using PBKDF2 with a random salt and stored under `config/offlineauth/auth_hash.json` on the server.
 
 ## How to Install
 
