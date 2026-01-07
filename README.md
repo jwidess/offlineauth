@@ -34,6 +34,12 @@ Edit `config/offlineauth/config.json` to customize:
 - `autoLoginEnable` — Enable/disable auto-login feature.
 - `autoLoginExpireSeconds` — Time window for IP-based auto-login.
 - `messages` — Customize all prompts and warnings.
+- `inventoryOnly` - Only backup player inventory data during auth.
+  - **False** (*Default*) | In this mode all player NBT data is backed up, including mod data like Curios, backpacks, etc.
+  - **True** | Only the player inventory data is backed up, this is faster and acceptable for Vanilla servers.
+- `mergeOnRestore` - Merge items received while unauthenticated (e.g. Starter Kits) with the restored inventory.
+  - **True** (*Default*) | Items are merged. If inventory is full, items are dropped. **NOTE**: This should always be enabled if `inventoryOnly` is **True** otherwise dupe glitches are possible.
+  - **False** | Items received while unauthenticated are discarded.
 
 ## Security Notice
 
