@@ -298,10 +298,12 @@ public class OfflineAuthHandler {
         if (backup != null && file != null) {
             // Capture items received while unauthenticated (e.g. starter kits or mod items)
             List<ItemStack> newItems = new ArrayList<>();
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (!stack.isEmpty()) {
-                    newItems.add(stack.copy());
+            if (config.mergeOnRestore) {
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack stack = player.getInventory().getItem(i);
+                    if (!stack.isEmpty()) {
+                        newItems.add(stack.copy());
+                    }
                 }
             }
 
@@ -316,9 +318,11 @@ public class OfflineAuthHandler {
             }
 
             // Merge new items back in, dropping if inventory is full
-            for (ItemStack stack : newItems) {
-                if (!player.getInventory().add(stack)) {
-                    player.drop(stack, false);
+            if (config.mergeOnRestore) {
+                for (ItemStack stack : newItems) {
+                    if (!player.getInventory().add(stack)) {
+                        player.drop(stack, false);
+                    }
                 }
             }
             
